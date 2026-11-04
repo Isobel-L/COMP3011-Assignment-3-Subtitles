@@ -1,0 +1,24 @@
+﻿# API keys and secrets
+key.txt
+.env
+.env.*
+*.key
+
+# Maven build output
+target/
+
+# Eclipse files
+.metadata/
+.settings/
+.classpath
+.project
+
+# Java
+*.class
+
+# Downloaded archives
+*.zip
+
+# Operating system
+.DS_Store
+Thumbs.db

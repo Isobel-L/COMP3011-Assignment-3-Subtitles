@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assignment 1 - Speech to Text</title>
+    <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+    <div id="app">
+        <h1>Assignment 1 - Speech to Text</h1>
+
+        <div class="card">
+            <button id="checkStatusBtn">Check API status</button>
+            <p id="statusText">Not checked yet.</p>
+        </div>
+
+        <div class="card">
+            <button id="startBtn">Start recording</button>
+            <button id="stopBtn" disabled>Stop recording</button>
+            <p id="recordingState">Idle</p>
+        </div>
+		<div class="card">
+		    <h2>Transcript</h2>
+		    <p id="transcriptText">No transcript yet.</p>
+		</div>
+    </div>
+
+    <script src="/app.js"></script>
+</body>
+</html>
