@@ -1,6 +1,7 @@
 package au.edu.adelaide.COMP3011.assignments;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -13,15 +14,14 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.multipart.MultipartFile;
 
-import tools.jackson.databind.PropertyNamingStrategies;
-import tools.jackson.databind.annotation.JsonNaming;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * This implementation of TranscriptionService goes out to OpenAI and keeps a
- * threadsafe (but not persistent) tally of token usage. It expects
- * openai.api.key to be set as a property when the constructor is called. It is
- * constructed and injected when the "fake-transcription" profile is active -
- * i.e. whenever we are out of a test environment.
+ * Transcription service that communicates with OpenAI's Whisper API.
+ *
+ * Requests word-level and segment-level timestamps for subtitle generation.
+ * Tracks cumulative audio usage in seconds.
  */
 @Service
 @Profile("!fake-transcription")
@@ -29,25 +29,33 @@ public class OpenAiTranscriptionService implements TranscriptionService {
 
     private final RestClient restClient;
 
-    // Just use simple transient storage for our token count tallies.
-    private long cumulativeInputTokenCount = 0;
-    private long cumulativeOutputTokenCount = 0;
-    // WARNING: Not intrinsically thread safe, so we only access them through the
-    // synchronized methods below to ensure an atomic update/view of both.
+    // Total duration of audio successfully transcribed.
+    private long cumulativeAudioSeconds = 0;
 
-    OpenAiTranscriptionService(@Value("${openai.api.key}") String apiKey) {
+    public OpenAiTranscriptionService(
+            @Value("${openai.api.key}") String apiKey) {
+
         System.out.println("Constructing OpenAiTranscriptionService...");
+
         this.restClient = RestClient.builder()
                 .baseUrl("https://api.openai.com/v1")
                 .defaultHeader("Authorization", "Bearer " + apiKey)
                 .build();
+
         System.out.println("...done.");
     }
 
+    /**
+     * Sends an audio file to Whisper and returns its transcription text.
+     *
+     * The timestamp information is also parsed, ready for use when
+     * implementing the subtitle endpoint.
+     */
     @Override
     public String transcribe(MultipartFile file) throws IOException {
+
         ByteArrayResource audio = new ByteArrayResource(file.getBytes()) {
-            @SuppressWarnings("null")
+
             @Override
             public String getFilename() {
                 return file.getOriginalFilename();
@@ -55,7 +63,11 @@ public class OpenAiTranscriptionService implements TranscriptionService {
         };
 
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-        body.add("model", "gpt-4o-mini-transcribe");
+
+        body.add("model", "whisper-1");
+        body.add("response_format", "verbose_json");
+        body.add("timestamp_granularities[]", "word");
+        body.add("timestamp_granularities[]", "segment");
         body.add("file", audio);
 
         TranscriptionResponse response = restClient.post()
@@ -64,36 +76,80 @@ public class OpenAiTranscriptionService implements TranscriptionService {
                 .body(body)
                 .retrieve()
                 .body(TranscriptionResponse.class);
-        System.out.println("... response text:" + response.text());
-        System.out.println("... input token count = " + response.usage().inputTokens());
-        System.out.println("... output token count = " + response.usage().outputTokens());
 
-        // Keeps stats up to date
-        this.addTokenUsage(response.usage().inputTokens(), response.usage().outputTokens());
+        if (response == null) {
+            throw new IOException("OpenAI returned an empty response.");
+        }
+
+        System.out.println("Transcription: " + response.text());
+
+        if (response.words() != null) {
+            System.out.println("Word timestamps received: "
+                    + response.words().size());
+        }
+
+        if (response.segments() != null) {
+            System.out.println("Segments received: "
+                    + response.segments().size());
+        }
+
+        if (response.duration() != null) {
+            addAudioUsage((long) Math.ceil(response.duration()));
+        }
 
         return response.text();
     }
 
+    /**
+     * Returns cumulative audio usage in seconds.
+     *
+     * This method retains the existing interface method name
+     * until we update the rest of the server.
+     */
     @Override
     public synchronized Map<String, Long> getTokenUsage() {
-        return Map.of(
-                "inputTokens", this.cumulativeInputTokenCount,
-                "outputTokens", this.cumulativeOutputTokenCount);
+        return Map.of("usage", cumulativeAudioSeconds);
     }
 
-    private synchronized void addTokenUsage(long inputTokens, long outputTokens) {
-        this.cumulativeInputTokenCount += inputTokens;
-        this.cumulativeOutputTokenCount += outputTokens;
+    private synchronized void addAudioUsage(long seconds) {
+        cumulativeAudioSeconds += seconds;
     }
 
+    /**
+     * Represents Whisper's verbose JSON response.
+     */
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private record TranscriptionResponse(
             String text,
-            Usage usage) {
+            Double duration,
+            List<Word> words,
+            List<Segment> segments) {
     }
 
-    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-    private record Usage(
-            long inputTokens,
-            long outputTokens) {
+    /**
+     * Individual word and its timestamps.
+     */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record Word(
+            String word,
+            double start,
+            double end) {
+    }
+
+    /**
+     * Larger speech segment with timestamps and
+     * confidence information.
+     */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record Segment(
+            double start,
+            double end,
+            String text,
+
+            @JsonProperty("no_speech_prob")
+            double noSpeechProb,
+
+            @JsonProperty("avg_logprob")
+            double aveLogProb) {
     }
 }
