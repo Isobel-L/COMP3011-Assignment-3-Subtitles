@@ -1,3 +1,4 @@
+
 package au.edu.adelaide.COMP3011.assignments;
 
 import java.io.IOException;
@@ -18,10 +19,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Transcription service that communicates with OpenAI's Whisper API.
+ * Transcription service using OpenAI Whisper.
  *
- * Requests word-level and segment-level timestamps for subtitle generation.
- * Tracks cumulative audio usage in seconds.
+ * Supports plain text transcription and timestamped
+ * transcription for subtitle generation.
  */
 @Service
 @Profile("!fake-transcription")
@@ -29,7 +30,6 @@ public class OpenAiTranscriptionService implements TranscriptionService {
 
     private final RestClient restClient;
 
-    // Total duration of audio successfully transcribed.
     private long cumulativeAudioSeconds = 0;
 
     public OpenAiTranscriptionService(
@@ -46,16 +46,22 @@ public class OpenAiTranscriptionService implements TranscriptionService {
     }
 
     /**
-     * Sends an audio file to Whisper and returns its transcription text.
-     *
-     * The timestamp information is also parsed, ready for use when
-     * implementing the subtitle endpoint.
+     * Returns only the transcription text.
+     * Preserves compatibility with the existing recording page.
      */
     @Override
     public String transcribe(MultipartFile file) throws IOException {
+        return transcribeWithTimestamps(file).text();
+    }
+
+    /**
+     * Returns text, duration, words and segments.
+     */
+    @Override
+    public SubtitleResult transcribeWithTimestamps(MultipartFile file)
+            throws IOException {
 
         ByteArrayResource audio = new ByteArrayResource(file.getBytes()) {
-
             @Override
             public String getFilename() {
                 return file.getOriginalFilename();
@@ -81,30 +87,49 @@ public class OpenAiTranscriptionService implements TranscriptionService {
             throw new IOException("OpenAI returned an empty response.");
         }
 
-        System.out.println("Transcription: " + response.text());
+        // Convert Whisper words into our public subtitle records.
+        List<SubtitleWord> words = response.words() == null
+                ? List.of()
+                : response.words().stream()
+                    .map(word -> new SubtitleWord(
+                            word.word(),
+                            word.start(),
+                            word.end()))
+                    .toList();
 
-        if (response.words() != null) {
-            System.out.println("Word timestamps received: "
-                    + response.words().size());
-        }
+        // Convert Whisper segments into our public subtitle records.
+        List<SubtitleSegment> segments = response.segments() == null
+                ? List.of()
+                : response.segments().stream()
+                    .map(segment -> new SubtitleSegment(
+                            segment.text(),
+                            segment.start(),
+                            segment.end(),
+                            segment.noSpeechProb(),
+                            segment.aveLogProb()))
+                    .toList();
 
-        if (response.segments() != null) {
-            System.out.println("Segments received: "
-                    + response.segments().size());
-        }
+        double duration = response.duration() == null
+                ? 0.0
+                : response.duration();
 
         if (response.duration() != null) {
-            addAudioUsage((long) Math.ceil(response.duration()));
+            addAudioUsage((long) Math.ceil(duration));
         }
 
-        return response.text();
+        System.out.println("Transcription: " + response.text());
+        System.out.println("Word timestamps received: " + words.size());
+        System.out.println("Segments received: " + segments.size());
+
+        return new SubtitleResult(
+                response.text(),
+                duration,
+                words,
+                segments);
     }
 
     /**
-     * Returns cumulative audio usage in seconds.
-     *
-     * This method retains the existing interface method name
-     * until we update the rest of the server.
+     * Returns cumulative transcription usage in seconds.
      */
     @Override
     public synchronized Map<String, Long> getTokenUsage() {
@@ -116,7 +141,7 @@ public class OpenAiTranscriptionService implements TranscriptionService {
     }
 
     /**
-     * Represents Whisper's verbose JSON response.
+     * Internal representation of Whisper's JSON response.
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record TranscriptionResponse(
@@ -126,9 +151,6 @@ public class OpenAiTranscriptionService implements TranscriptionService {
             List<Segment> segments) {
     }
 
-    /**
-     * Individual word and its timestamps.
-     */
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record Word(
             String word,
@@ -136,19 +158,13 @@ public class OpenAiTranscriptionService implements TranscriptionService {
             double end) {
     }
 
-    /**
-     * Larger speech segment with timestamps and
-     * confidence information.
-     */
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record Segment(
             double start,
             double end,
             String text,
-
             @JsonProperty("no_speech_prob")
             double noSpeechProb,
-
             @JsonProperty("avg_logprob")
             double aveLogProb) {
     }

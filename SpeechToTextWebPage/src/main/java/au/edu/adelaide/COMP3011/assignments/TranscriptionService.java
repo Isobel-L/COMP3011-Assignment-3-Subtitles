@@ -6,14 +6,17 @@ import java.util.Map;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * Simple interface for getting transcription text back from a multipart audio
- * file and keeping track of the cumulative token usage that arises.
+ * Interface for audio transcription and usage tracking.
  */
 public interface TranscriptionService {
 
+    // Returns only the recognised speech as text.
     String transcribe(MultipartFile file) throws IOException;
-    // Input file.bytes() is assumed to contain the raw audio data.
 
+    // Returns the text, timestamps, words and segments.
+    SubtitleResult transcribeWithTimestamps(MultipartFile file)
+            throws IOException;
+
+    // Returns cumulative transcription usage.
     Map<String, Long> getTokenUsage();
-    // Return format: { "inputTokens": long, "outputTokens": long }
 }
