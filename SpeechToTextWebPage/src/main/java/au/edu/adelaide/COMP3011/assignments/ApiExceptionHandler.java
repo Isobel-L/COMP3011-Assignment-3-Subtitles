@@ -10,9 +10,18 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+	
+	@ExceptionHandler(MissingServletRequestPartException.class)
+	public ResponseEntity<Map<String, String>> handleMissingFile(
+	        MissingServletRequestPartException exception) {
+
+	    return ResponseEntity.badRequest().body(
+	            Map.of("error", "Required audio file is missing."));
+	}
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleBadRequest(
