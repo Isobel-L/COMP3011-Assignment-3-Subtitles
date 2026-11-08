@@ -18,6 +18,7 @@ import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.application.Platform;
 
 /**
  * The controller part of the video player model-view-controller architecture.
@@ -30,6 +31,11 @@ import javafx.scene.input.KeyEvent;
 public class VideoPlayerController {
     private final VideoPlayerModel model;
     private final VideoPlayerView view;
+    private final SubtitleGenerationService subtitleService =
+            new SubtitleGenerationService();
+
+    private List<SubtitleCue> subtitleCues = List.of();
+    
     private final BiConsumer<Integer, Integer> videoSizeChangedHandler;
 
     public VideoPlayerController(
@@ -84,10 +90,32 @@ public class VideoPlayerController {
         return view;
     }
 
-    public void play(File file) {
-        view.setPlaybackControlsDisabled(false);
-        model.play(file);
-    }
+
+public void play(File file) {
+    view.setPlaybackControlsDisabled(false);
+    subtitleCues = List.of();
+
+    // Start video playback immediately.
+    model.play(file);
+
+    // Generate subtitles in the background.
+    subtitleService.generate(file.toPath())
+        .whenComplete((cues, error) -> {
+            Platform.runLater(() -> {
+                if (error != null) {
+                    System.err.println(
+                        "Subtitle generation failed: "
+                        + error.getMessage());
+                    return;
+                }
+
+                subtitleCues = cues;
+                System.out.println(
+                    "Generated " + cues.size()
+                    + " subtitle cues.");
+            });
+        });
+}
 
     public void shutdown() {
         model.shutdown();

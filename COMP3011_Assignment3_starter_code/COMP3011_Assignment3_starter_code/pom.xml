@@ -1,3 +1,4 @@
+
 <!--
   Starter code supplied for Adelaide University COMP3011 Assignment 2.
   Students are free to modify this file for assessment purposes.
@@ -8,113 +9,136 @@
 
   Copyright 2026 Simon Ratcliffe
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <modelVersion>4.0.0</modelVersion>
 
-  <groupId>comp3011</groupId>
-  <artifactId>VideoPlayerSingleThread</artifactId>
-  <version>0.1</version>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         http://maven.apache.org/maven-v4_0_0.xsd">
 
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.release>25</maven.compiler.release>
-    <javafx.version>26.0.2</javafx.version>
-    <javacv.version>1.5.13</javacv.version>
-  </properties>
+    <modelVersion>4.0.0</modelVersion>
 
-  <dependencies>
-    <dependency>
-      <groupId>org.openjfx</groupId>
-      <artifactId>javafx-controls</artifactId>
-      <version>${javafx.version}</version>
-    </dependency>
-    
-    <dependency>
-      <groupId>org.bytedeco</groupId>
-      <artifactId>javacv-platform</artifactId>
-      <version>${javacv.version}</version>
-    </dependency>
-    
-<dependency>
-    <groupId>org.junit.jupiter</groupId>
-    <artifactId>junit-jupiter</artifactId>
-    <version>5.12.2</version>
-    <scope>test</scope>
-</dependency>
+    <groupId>comp3011</groupId>
+    <artifactId>VideoPlayerSingleThread</artifactId>
+    <version>0.1</version>
 
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.release>25</maven.compiler.release>
+        <javafx.version>26.0.2</javafx.version>
+        <javacv.version>1.5.13</javacv.version>
+    </properties>
 
-<dependency>
-    <groupId>com.fasterxml.jackson.core</groupId>
-    <artifactId>jackson-databind</artifactId>
-    <version>2.18.3</version>
-</dependency>
+    <dependencies>
 
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
 
-  </dependencies>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>javacv-platform</artifactId>
+            <version>${javacv.version}</version>
+        </dependency>
 
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.openjfx</groupId>
-        <artifactId>javafx-maven-plugin</artifactId>
-        <version>0.0.8</version>
-        <configuration>
-          <mainClass>comp3011.VideoPlayerApp</mainClass>
-            <options>
-                <option>--enable-native-access=javafx.graphics</option>
-                <option>--enable-native-access=ALL-UNNAMED</option>
-            </options>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.12.2</version>
+            <scope>test</scope>
+        </dependency>
 
-  <profiles>
-    <profile>
-      <id>fat-jar</id>
-      <build>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.18.3</version>
+        </dependency>
+
+    </dependencies>
+
+    <build>
         <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-shade-plugin</artifactId>
-            <version>3.6.0</version>
-            <executions>
-              <execution>
-                <phase>package</phase>
-                <goals>
-                  <goal>shade</goal>
-                </goals>
+
+            <plugin>
+                <groupId>org.openjfx</groupId>
+                <artifactId>javafx-maven-plugin</artifactId>
+                <version>0.0.8</version>
+
                 <configuration>
-                  <createDependencyReducedPom>false</createDependencyReducedPom>
-                  <shadedArtifactAttached>true</shadedArtifactAttached>
-                  <shadedClassifierName>all</shadedClassifierName>
-                  <filters>
-                    <filter>
-                      <artifact>*:*</artifact>
-                      <excludes>
-                        <exclude>module-info.class</exclude>
-                        <exclude>META-INF/versions/*/module-info.class</exclude>
-                        <exclude>META-INF/MANIFEST.MF</exclude>
-                        <exclude>META-INF/maven/**</exclude>
-                        <exclude>META-INF/native-image/**</exclude>
-                      </excludes>
-                    </filter>
-                  </filters>
-                  <transformers>
-                    <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                      <mainClass>comp3011.VideoPlayerAppLauncher</mainClass>
-                      <manifestEntries>
-                        <Enable-Native-Access>ALL-UNNAMED</Enable-Native-Access>
-                      </manifestEntries>
-                    </transformer>
-                  </transformers>
+                    <mainClass>comp3011.VideoPlayerApp</mainClass>
+
+<commandlineArgs>"C:\Users\isobe\OneDrive\Pictures\Camera Roll\WIN_20261108_21_24_52_Pro.mp4"</commandlineArgs>
+
+                    <!-- Explicitly use Java 25 -->
+                    <executable>C:\Program Files\Microsoft\jdk-25.0.4.7-hotspot\bin\java.exe</executable>
+
+                    <options>
+                        <option>--enable-native-access=javafx.graphics</option>
+                        <option>--enable-native-access=ALL-UNNAMED</option>
+                    </options>
                 </configuration>
-              </execution>
-            </executions>
-          </plugin>
+            </plugin>
+
         </plugins>
-      </build>
-    </profile>
-  </profiles>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>fat-jar</id>
+
+            <build>
+                <plugins>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-shade-plugin</artifactId>
+                        <version>3.6.0</version>
+
+                        <executions>
+                            <execution>
+                                <phase>package</phase>
+
+                                <goals>
+                                    <goal>shade</goal>
+                                </goals>
+
+                                <configuration>
+                                    <createDependencyReducedPom>false</createDependencyReducedPom>
+                                    <shadedArtifactAttached>true</shadedArtifactAttached>
+                                    <shadedClassifierName>all</shadedClassifierName>
+
+                                    <filters>
+                                        <filter>
+                                            <artifact>*:*</artifact>
+                                            <excludes>
+                                                <exclude>module-info.class</exclude>
+                                                <exclude>META-INF/versions/*/module-info.class</exclude>
+                                                <exclude>META-INF/MANIFEST.MF</exclude>
+                                                <exclude>META-INF/maven/**</exclude>
+                                                <exclude>META-INF/native-image/**</exclude>
+                                            </excludes>
+                                        </filter>
+                                    </filters>
+
+                                    <transformers>
+                                        <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                            <mainClass>comp3011.VideoPlayerAppLauncher</mainClass>
+
+                                            <manifestEntries>
+                                                <Enable-Native-Access>ALL-UNNAMED</Enable-Native-Access>
+                                            </manifestEntries>
+                                        </transformer>
+                                    </transformers>
+
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
 </project>
