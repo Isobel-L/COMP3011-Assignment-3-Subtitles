@@ -21,17 +21,15 @@ import javafx.stage.Stage;
 
 /**
  * Extends JavaFX's Application class and is the entry point for the video player.
- * Provided required JavaFX methods start and stop and also basic on-screen window
- * management functions. Owns the {@link VideoPlayerController}, which in turn owns
- * the {@link VideoPlayerView} and {@link VideoPlayerController}.
+ * Provides required JavaFX methods start and stop and basic on-screen window
+ * management functions. Owns the VideoPlayerController, which in turn owns
+ * the VideoPlayerView and VideoPlayerModel.
  *
- * <p>
- * Creates the JavaFX Stage and Scene, the VideoPlayerController, and applies
- * command-line launch settings, and starts playback. It also resizes the video
- * display to fit the selected screen.
- * </p>
+ * Creates the JavaFX Stage and Scene, applies command-line launch settings,
+ * and starts playback. It also resizes the video display to fit the screen.
  */
 public class VideoPlayerApp extends Application {
+
     private static CommandLineController commandLineController;
 
     private VideoPlayerController controller;
@@ -44,10 +42,13 @@ public class VideoPlayerApp extends Application {
     public void start(Stage stage) {
         this.stage = stage;
 
-        List<FrameProcessor> frameProcessors = commandLineController.getFrameProcessors();
+        List<FrameProcessor> frameProcessors =
+                commandLineController.getFrameProcessors();
+
         controller = new VideoPlayerController(
                 frameProcessors,
                 commandLineController.isAudioRequested(),
+                commandLineController.isSubtitlesRequested(),
                 this::setVideoSize);
 
         Scene scene = new Scene(controller.getView().getRoot());
@@ -59,8 +60,10 @@ public class VideoPlayerApp extends Application {
         stage.setMaximized(commandLineController.isMaximiseRequested());
         stage.show();
 
-        stage.outputScaleXProperty().addListener((_, _, _) -> updateVideoSize());
-        stage.outputScaleYProperty().addListener((_, _, _) -> updateVideoSize());
+        stage.outputScaleXProperty().addListener(
+                (_, _, _) -> updateVideoSize());
+        stage.outputScaleYProperty().addListener(
+                (_, _, _) -> updateVideoSize());
         stage.setOnCloseRequest(_ -> controller.shutdown());
 
         playVideo();
@@ -76,11 +79,14 @@ public class VideoPlayerApp extends Application {
                     .filter(screen -> !screen.equals(Screen.getPrimary()))
                     .findFirst()
                     .orElse(Screen.getPrimary());
+
         } else if (displayId <= screens.size()) {
             targetScreen = screens.get(displayId - 1);
+
         } else {
             targetScreen = Screen.getPrimary();
-            controller.getView().setStatus("Display " + displayId + " not found");
+            controller.getView().setStatus(
+                    "Display " + displayId + " not found");
         }
 
         Rectangle2D bounds = targetScreen.getVisualBounds();
@@ -117,7 +123,9 @@ public class VideoPlayerApp extends Application {
         double displayWidth = videoWidth / outputScaleX;
         double displayHeight = videoHeight / outputScaleY;
 
-        controller.getView().setVideoDisplaySize(displayWidth, displayHeight);
+        controller.getView().setVideoDisplaySize(
+                displayWidth, displayHeight);
+
         if (!stage.isMaximized()) {
             stage.sizeToScene();
             alignSceneToSelectedScreen();
@@ -129,8 +137,12 @@ public class VideoPlayerApp extends Application {
             return;
         }
 
-        stage.setX(selectedScreenBounds.getMinX() - stage.getScene().getX());
-        stage.setY(selectedScreenBounds.getMinY() - stage.getScene().getY());
+        stage.setX(
+                selectedScreenBounds.getMinX()
+                - stage.getScene().getX());
+        stage.setY(
+                selectedScreenBounds.getMinY()
+                - stage.getScene().getY());
     }
 
     @Override
@@ -146,8 +158,10 @@ public class VideoPlayerApp extends Application {
                     commandLineController.getVideoFile(),
                     commandLineController.getOutputFrameNumber(),
                     commandLineController.getFrameProcessors());
+
             System.out.println("Wrote " + outputFile.getPath());
             return 0;
+
         } catch (Exception e) {
             System.out.println("Error: " + e.getMessage());
             return 1;

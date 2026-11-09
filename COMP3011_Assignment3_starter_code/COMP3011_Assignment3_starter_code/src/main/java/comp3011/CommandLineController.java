@@ -15,32 +15,38 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created in the VideoPlayerApp's main function to receive and parse the video player's command-line arguments.
+ * Created in the VideoPlayerApp's main function to receive and parse
+ * the video player's command-line arguments.
  *
- * <p>
- * Extracts the video file and supported launch options, reports invalid input
- * or help text, and exposes the resulting launch configuration via methods to the
- * {@link VideoPlayerApp}.
- * </p>
+ * Extracts the video file and supported launch options, reports invalid
+ * input or help text, and exposes the resulting launch configuration
+ * via methods to the VideoPlayerApp.
  */
 public class CommandLineController {
+
     private final String[] args;
 
     private boolean helpRequested;
     private boolean audioRequested;
+    private boolean subtitlesRequested;
     private boolean maximiseRequested;
+
     private Integer displayId;
     private Integer outputFrameNumber;
+
     private final List<FrameProcessor> frameProcessors = new ArrayList<>();
+
     private File videoFile;
     private String errorMessage;
 
     public CommandLineController(String[] args) {
         this.args = args.clone();
         parse();
+
         if (errorMessage != null) {
             System.out.println(errorMessage);
         }
+
         if (helpRequested) {
             printHelp();
         }
@@ -66,6 +72,10 @@ public class CommandLineController {
         return audioRequested;
     }
 
+    public boolean isSubtitlesRequested() {
+        return subtitlesRequested;
+    }
+
     public boolean isMaximiseRequested() {
         return maximiseRequested;
     }
@@ -88,46 +98,70 @@ public class CommandLineController {
 
     private void parse() {
         List<String> videoFiles = new ArrayList<>();
+
         for (int argIndex = 0; argIndex < args.length; argIndex++) {
             String arg = args[argIndex];
+
             if ("-h".equals(arg) || "--help".equals(arg)) {
                 helpRequested = true;
+
             } else if ("-a".equals(arg) || "--audio".equals(arg)) {
                 audioRequested = true;
+
+            } else if ("-S".equals(arg) || "--subtitles".equals(arg)) {
+                subtitlesRequested = true;
+
             } else if ("-x".equals(arg) || "--maximise".equals(arg)) {
                 maximiseRequested = true;
+
             } else if ("-o".equals(arg) || "--output-frame".equals(arg)) {
                 argIndex = parseOutputFrameNumber(argIndex);
+
             } else if ("-1".equals(arg) || "--monitor-1".equals(arg)) {
                 setDisplayId(1);
+
             } else if ("-2".equals(arg) || "--monitor-2".equals(arg)) {
                 setDisplayId(2);
+
             } else if ("--number-frames".equals(arg)) {
                 frameProcessors.add(new FrameNumberer());
+
             } else if ("--scratch-frames".equals(arg)) {
                 frameProcessors.add(new FrameScratcher());
+
             } else if ("--flicker-frames".equals(arg)) {
                 frameProcessors.add(new FrameFlickerer());
+
             } else if ("--black-and-white".equals(arg)) {
                 frameProcessors.add(new FrameBlackAndWhiter());
+
             } else if ("--yellow-frames".equals(arg)) {
                 frameProcessors.add(new FrameYellower());
+
             } else if ("--vignette-frames".equals(arg)) {
                 frameProcessors.add(new FrameVignetter());
+
             } else if ("--dust-frames".equals(arg)) {
                 frameProcessors.add(new FrameDuster());
+
             } else if ("--jitter-frames".equals(arg)) {
                 frameProcessors.add(new FrameJitterer());
+
             } else if ("--mottle-frames".equals(arg)) {
                 frameProcessors.add(new FrameMottler());
+
             } else if ("--bleed-frames".equals(arg)) {
                 frameProcessors.add(new FrameBleeder());
+
             } else if ("--pepper-frames".equals(arg)) {
                 frameProcessors.add(new FramePepperer());
+
             } else if (isFrameProcessorCluster(arg)) {
                 parseFrameProcessorCluster(arg);
+
             } else if (arg.startsWith("-")) {
                 errorMessage = "Unknown option: " + arg;
+
             } else {
                 videoFiles.add(arg);
             }
@@ -139,12 +173,15 @@ public class CommandLineController {
 
         if (videoFiles.size() > 1) {
             errorMessage = "Usage: VideoPlayer [options] [video-file]";
+
         } else if (videoFiles.size() == 1) {
             videoFile = new File(videoFiles.get(0));
+
             if (!videoFile.isFile()) {
                 errorMessage = "File not found: " + videoFile.getPath();
                 videoFile = null;
             }
+
         } else {
             if (!helpRequested) {
                 errorMessage = "No video file specified.";
@@ -159,17 +196,25 @@ public class CommandLineController {
         }
 
         String frameNumberText = args[argIndex + 1];
+
         try {
             int frameNumber = Integer.parseInt(frameNumberText);
+
             if (frameNumber <= 0) {
-                errorMessage = "Output frame number must be positive: " + frameNumberText;
+                errorMessage =
+                    "Output frame number must be positive: " + frameNumberText;
+
             } else if (outputFrameNumber != null) {
                 errorMessage = "Only one output frame option can be used";
+
             } else {
                 outputFrameNumber = frameNumber;
             }
+
         } catch (NumberFormatException e) {
-            errorMessage = "Output frame number must be a positive integer: " + frameNumberText;
+            errorMessage =
+                "Output frame number must be a positive integer: "
+                + frameNumberText;
         }
 
         return argIndex + 1;
@@ -180,11 +225,14 @@ public class CommandLineController {
             errorMessage = "Only one display option can be used";
             return;
         }
+
         this.displayId = displayId;
     }
 
     private boolean isFrameProcessorCluster(String arg) {
-        if (!arg.startsWith("-") || arg.startsWith("--") || arg.length() < 2) {
+        if (!arg.startsWith("-")
+                || arg.startsWith("--")
+                || arg.length() < 2) {
             return false;
         }
 
@@ -193,12 +241,22 @@ public class CommandLineController {
                 return false;
             }
         }
+
         return true;
     }
 
     private boolean isFrameProcessorOption(char option) {
-        return option == 'n' || option == 's' || option == 'f' || option == 'w' || option == 'y' || option == 'v'
-                || option == 'd' || option == 'j' || option == 'm' || option == 'b' || option == 'p';
+        return option == 'n'
+            || option == 's'
+            || option == 'f'
+            || option == 'w'
+            || option == 'y'
+            || option == 'v'
+            || option == 'd'
+            || option == 'j'
+            || option == 'm'
+            || option == 'b'
+            || option == 'p';
     }
 
     private void parseFrameProcessorCluster(String arg) {
@@ -210,24 +268,34 @@ public class CommandLineController {
     private void addFrameProcessor(char option) {
         if (option == 'n') {
             frameProcessors.add(new FrameNumberer());
+
         } else if (option == 's') {
             frameProcessors.add(new FrameScratcher());
+
         } else if (option == 'f') {
             frameProcessors.add(new FrameFlickerer());
+
         } else if (option == 'w') {
             frameProcessors.add(new FrameBlackAndWhiter());
+
         } else if (option == 'y') {
             frameProcessors.add(new FrameYellower());
+
         } else if (option == 'v') {
             frameProcessors.add(new FrameVignetter());
+
         } else if (option == 'd') {
             frameProcessors.add(new FrameDuster());
+
         } else if (option == 'j') {
             frameProcessors.add(new FrameJitterer());
+
         } else if (option == 'm') {
             frameProcessors.add(new FrameMottler());
+
         } else if (option == 'b') {
             frameProcessors.add(new FrameBleeder());
+
         } else if (option == 'p') {
             frameProcessors.add(new FramePepperer());
         }
@@ -239,10 +307,12 @@ public class CommandLineController {
         System.out.println("Options:");
         System.out.println("  -h, --help         Show this help message");
         System.out.println("  -a, --audio        Play audio");
+        System.out.println("  -S, --subtitles    Generate subtitles for the video");
         System.out.println("  -x, --maximise     Open the player maximised");
         System.out.println("  -1, --monitor-1    Open the player on display 1");
         System.out.println("  -2, --monitor-2    Open the player on display 2");
         // System.out.println(" -o, --output-frame N Save a .png of a specific frame and exit");
+
         System.out.println();
         System.out.println("Frame processors:");
         System.out.println("  -n, --number-frames    Render the frame number onto each frame");
@@ -256,9 +326,13 @@ public class CommandLineController {
         System.out.println("  -m, --mottle-frames    Add cloudy emulsion mottling");
         System.out.println("  -b, --bleed-frames     Bleed light into frames");
         System.out.println("  -p, --pepper-frames    Pepper frames with dark spots/blotches");
+
         System.out.println();
-        System.out.println("Frame processors are applied in command-line order and may be repeated.");
-        System.out.println("Example: -nssnfwyvdjmbp numbers, scratches twice, numbers again, flickers,");
-        System.out.println("converts, warms, vignettes, dusts, jitters, mottles, bleeds, then peppers.");
+        System.out.println(
+            "Frame processors are applied in command-line order and may be repeated.");
+        System.out.println(
+            "Example: -nssnfwyvdjmbp numbers, scratches twice, numbers again, flickers,");
+        System.out.println(
+            "converts, warms, vignettes, dusts, jitters, mottles, bleeds, then peppers.");
     }
 }
