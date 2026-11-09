@@ -9,7 +9,6 @@
  *
  * Copyright 2026 Simon Ratcliffe
  */
-
 package comp3011;
 
 import java.io.File;
@@ -38,6 +37,9 @@ public class VideoPlayerController {
             new SubtitleGenerationService();
 
     private List<SubtitleCue> subtitleCues = List.of();
+
+    // Commit 15: Track whether subtitles are currently visible.
+    private boolean subtitlesVisible = true;
 
     private final BiConsumer<Integer, Integer> videoSizeChangedHandler;
 
@@ -68,7 +70,14 @@ public class VideoPlayerController {
         view.getStopButton().setOnAction(_ -> stopAndExit());
         view.getAudioButton().setOnAction(_ -> toggleAudioOutput());
 
+        // Commit 15: Connect the CC button.
+        view.getSubtitleButton().setOnAction(_ -> toggleSubtitles());
+
         view.showAudioEnabled(model.isAudioOutputEnabled());
+
+        // Subtitles can only be toggled when -S is enabled.
+        view.getSubtitleButton().setDisable(!subtitlesRequested);
+        updateSubtitleButton();
     }
 
     public void installKeyboardShortcuts(Scene scene) {
@@ -98,6 +107,12 @@ public class VideoPlayerController {
             } else if (event.getCode() == KeyCode.A) {
                 toggleAudioOutput();
                 event.consume();
+
+            } else if (event.getCode() == KeyCode.C) {
+                if (subtitlesRequested) {
+                    toggleSubtitles();
+                }
+                event.consume();
             }
         });
     }
@@ -110,7 +125,12 @@ public class VideoPlayerController {
 
         view.setPlaybackControlsDisabled(false);
 
+        // Keep CC disabled when subtitle generation was not requested.
+        view.getSubtitleButton().setDisable(!subtitlesRequested);
+
         subtitleCues = List.of();
+        subtitlesVisible = true;
+        updateSubtitleButton();
         view.setSubtitleText("");
 
         // Begin video playback immediately.
@@ -184,6 +204,38 @@ public class VideoPlayerController {
         model.toggleAudioOutput();
     }
 
+    /**
+     * Commit 15: Toggle subtitle visibility without changing
+     * playback or regenerating subtitles.
+     */
+    private void toggleSubtitles() {
+
+        if (!subtitlesRequested) {
+            return;
+        }
+
+        subtitlesVisible = !subtitlesVisible;
+
+        updateSubtitleButton();
+        updateSubtitle();
+    }
+
+    /**
+     * Update the CC button to show whether subtitles
+     * are currently enabled or disabled.
+     */
+    private void updateSubtitleButton() {
+
+        if (subtitlesRequested && subtitlesVisible) {
+            view.getSubtitleButton().setStyle(
+                    "-fx-font-weight: bold;"
+                    + "-fx-background-color: lightgreen;");
+        } else {
+            view.getSubtitleButton().setStyle(
+                    "-fx-font-weight: normal;");
+        }
+    }
+
     private void stopAndExit() {
         view.setSubtitleText("");
         model.stopPlayback();
@@ -223,11 +275,15 @@ public class VideoPlayerController {
 
     /**
      * Displays the subtitle cue matching the current video time.
-     * Clears the subtitle when no cue is active.
+     * Clears the subtitle when no cue is active or subtitles
+     * have been disabled by the user.
      */
     private void updateSubtitle() {
 
-        if (!subtitlesRequested || subtitleCues.isEmpty()) {
+        if (!subtitlesRequested
+                || !subtitlesVisible
+                || subtitleCues.isEmpty()) {
+
             view.setSubtitleText("");
             return;
         }

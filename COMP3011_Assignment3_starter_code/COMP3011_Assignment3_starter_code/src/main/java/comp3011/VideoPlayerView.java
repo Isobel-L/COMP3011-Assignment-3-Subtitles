@@ -1,7 +1,8 @@
+
 /*
  * Starter code supplied for Adelaide University COMP3011 Assignment 2.
  * Students are free to modify this file for assessment purposes.
- * 
+ *
  * Authors:
  *   1. Simon Ratcliffe, in collaboration with GPT-5.6 Terra
  *   2. <student name and student number insert here upon modification>
@@ -43,6 +44,7 @@ import javafx.scene.shape.StrokeLineCap;
  * </p>
  */
 public class VideoPlayerView {
+
     private static final int ICON_SIZE = 28;
 
     private final ImageView imageView = new ImageView();
@@ -50,14 +52,17 @@ public class VideoPlayerView {
     private final Label statusLabel = new Label("No video loaded");
     private final Label tooltipLabel = new Label();
     private final Pane tooltipLayer = new Pane();
+
     private final StackPane videoPane;
     private final StackPane root;
+
     private final Button startOverButton;
     private final Button backFiveButton;
     private final Button pausePlayButton;
     private final Button forwardFiveButton;
     private final Button stopButton;
     private final Button audioButton;
+    private final Button subtitleButton;
 
     public VideoPlayerView() {
         imageView.setPreserveRatio(true);
@@ -80,9 +85,11 @@ public class VideoPlayerView {
         StackPane.setAlignment(subtitleLabel, Pos.BOTTOM_CENTER);
         StackPane.setMargin(subtitleLabel, new Insets(0, 24, 28, 24));
         subtitleLabel.maxWidthProperty().bind(videoPane.widthProperty().subtract(48));
+
         videoPane.setStyle("-fx-background-color: black;");
         videoPane.setMinSize(0, 0);
         videoPane.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+
         imageView.fitWidthProperty().bind(videoPane.widthProperty());
         imageView.fitHeightProperty().bind(videoPane.heightProperty());
 
@@ -92,6 +99,13 @@ public class VideoPlayerView {
         forwardFiveButton = iconButton(createLoopIcon(true, "5"));
         stopButton = iconButton(createStopIcon());
         audioButton = iconButton(createAudioIcon(false));
+
+        // Commit 15: Add subtitle visibility button.
+        subtitleButton = new Button("CC");
+        subtitleButton.setMinSize(42, 36);
+        subtitleButton.setPrefSize(42, 36);
+        subtitleButton.setFocusTraversable(false);
+
         setPlaybackControlsDisabled(true);
 
         HBox controls = new HBox(
@@ -102,6 +116,7 @@ public class VideoPlayerView {
                 forwardFiveButton,
                 stopButton,
                 audioButton,
+                subtitleButton,
                 statusLabel);
 
         controls.setPadding(new Insets(10));
@@ -144,6 +159,10 @@ public class VideoPlayerView {
         return audioButton;
     }
 
+    public Button getSubtitleButton() {
+        return subtitleButton;
+    }
+
     public void setStatus(String status) {
         statusLabel.setText(status);
     }
@@ -182,10 +201,11 @@ public class VideoPlayerView {
         forwardFiveButton.setDisable(disabled);
         stopButton.setDisable(disabled);
         audioButton.setDisable(disabled);
+        subtitleButton.setDisable(disabled);
     }
 
-    // There are a bunch of tooltip handling methods starting from here. We want to use tooltips so that people with
-    // mouse/trackpads can learn what the hotkeys are and hopefully just use them instead, because they are easy/fast.
+    // There are a bunch of tooltip handling methods starting from here.
+    // Tooltips help mouse/trackpad users learn the keyboard shortcuts.
     private void setButtonTooltips() {
         setButtonTooltip(startOverButton, "[HOME]");
         setButtonTooltip(backFiveButton, "[LEFT]");
@@ -193,17 +213,20 @@ public class VideoPlayerView {
         setButtonTooltip(forwardFiveButton, "[RIGHT]");
         setButtonTooltip(stopButton, "[ESC]");
         setButtonTooltip(audioButton, "[A]");
+        setButtonTooltip(subtitleButton, "[C] Toggle subtitles");
     }
 
     private void setButtonTooltip(Button button, String text) {
         button.setOnMouseEntered(event -> {
             showTooltip(text, event.getSceneX(), event.getSceneY());
         });
+
         button.setOnMouseMoved(event -> {
             if (tooltipLabel.isVisible()) {
                 moveTooltip(event.getSceneX(), event.getSceneY());
             }
         });
+
         button.setOnMouseExited(_ -> hideTooltip());
         button.setOnMousePressed(_ -> hideTooltip());
     }
@@ -237,6 +260,7 @@ public class VideoPlayerView {
         Point2D point = tooltipLayer.sceneToLocal(sceneX + 12, sceneY + 16);
         double maxX = Math.max(0, tooltipLayer.getWidth() - tooltipLabel.getWidth() - 2);
         double maxY = Math.max(0, tooltipLayer.getHeight() - tooltipLabel.getHeight() - 2);
+
         tooltipLabel.relocate(
                 Math.max(0, Math.min(point.getX(), maxX)),
                 Math.max(0, Math.min(point.getY(), maxY)));
@@ -257,8 +281,7 @@ public class VideoPlayerView {
         return button;
     }
 
-    // Decided to hand code icons here instead of using pre-drawn assets/resources, since the icons are simple and
-    // universally recognised and this one they will look better on different DPI displays.
+    // Hand-coded icons instead of external image assets.
     private Node createLoopIcon(boolean clockwise, String text) {
         Pane pane = new Pane();
         pane.setMinSize(ICON_SIZE, ICON_SIZE);
@@ -270,11 +293,12 @@ public class VideoPlayerView {
                 ? "M 10 6 "
                         + "C 7 7.5 5 10.5 5 14 "
                         + "C 5 19 9 23 14 23 "
-                        + "C 19 23 23 19 23 14 " // ~3/4 circle bezier curve empty top right
+                        + "C 19 23 23 19 23 14 "
                 : "M 5 14 "
                         + "C 5 19 9 23 14 23 "
                         + "C 19 23 23 19 23 14 "
-                        + "C 23 10.5 21 7.5 18 6"); // ~3/4 circle bezier curve empty top right
+                        + "C 23 10.5 21 7.5 18 6");
+
         loop.setFill(null);
         loop.setStroke(Color.BLACK);
         loop.setStrokeWidth(2.25);
@@ -283,8 +307,8 @@ public class VideoPlayerView {
         Polygon arrowHead = clockwise
                 ? new Polygon(18, 5, 11.5, 1.5, 11.5, 8.5)
                 : new Polygon(10, 5, 16.5, 1.5, 16.5, 8.5);
-        arrowHead.setFill(Color.BLACK);
 
+        arrowHead.setFill(Color.BLACK);
         pane.getChildren().addAll(loop, arrowHead);
 
         if (text != null) {
@@ -293,7 +317,10 @@ public class VideoPlayerView {
             label.setMinSize(ICON_SIZE, ICON_SIZE);
             label.setPrefSize(ICON_SIZE, ICON_SIZE);
             label.setMaxSize(ICON_SIZE, ICON_SIZE);
-            label.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: black;");
+            label.setStyle(
+                    "-fx-font-size: 11px;"
+                    + "-fx-font-weight: bold;"
+                    + "-fx-text-fill: black;");
             label.setMouseTransparent(true);
             pane.getChildren().add(label);
         }
@@ -301,7 +328,7 @@ public class VideoPlayerView {
         return pane;
     }
 
-    // Simple two vertical bars 'pause' icon.
+    // Simple two vertical bars for pause.
     private Canvas createPauseIcon() {
         Canvas canvas = new Canvas(ICON_SIZE, ICON_SIZE);
         GraphicsContext gc = canvas.getGraphicsContext2D();
@@ -311,7 +338,7 @@ public class VideoPlayerView {
         return canvas;
     }
 
-    // Simple right facing equilateral triangle 'play' icon.
+    // Right-facing triangle for play.
     private Canvas createPlayIcon() {
         Canvas canvas = new Canvas(ICON_SIZE, ICON_SIZE);
         GraphicsContext gc = canvas.getGraphicsContext2D();
@@ -323,7 +350,7 @@ public class VideoPlayerView {
         return canvas;
     }
 
-    // Simple square 'stop' icon.
+    // Square stop icon.
     private Canvas createStopIcon() {
         Canvas canvas = new Canvas(ICON_SIZE, ICON_SIZE);
         GraphicsContext gc = canvas.getGraphicsContext2D();
@@ -332,7 +359,7 @@ public class VideoPlayerView {
         return canvas;
     }
 
-    // Kind of speaker looking thing ...
+    // Speaker icon with waves when audio is enabled.
     private Node createAudioIcon(boolean audioEnabled) {
         Pane pane = new Pane();
         pane.setMinSize(ICON_SIZE, ICON_SIZE);
@@ -346,12 +373,16 @@ public class VideoPlayerView {
                 16, 22,
                 10, 17,
                 5, 17);
+
         speaker.setFill(Color.BLACK);
         pane.getChildren().add(speaker);
 
         if (audioEnabled) {
-            SVGPath innerWave = audioWave("M 18 11 C 20 12.5 20 15.5 18 17");
-            SVGPath outerWave = audioWave("M 20.5 8 C 24 11.25 24 16.75 20.5 20");
+            SVGPath innerWave = audioWave(
+                    "M 18 11 C 20 12.5 20 15.5 18 17");
+            SVGPath outerWave = audioWave(
+                    "M 20.5 8 C 24 11.25 24 16.75 20.5 20");
+
             pane.getChildren().addAll(innerWave, outerWave);
         } else {
             Line slashDown = audioLine(19, 9, 25, 19);
@@ -362,7 +393,6 @@ public class VideoPlayerView {
         return pane;
     }
 
-    // Little helper for different radius waves coming out of the speaker.
     private SVGPath audioWave(String content) {
         SVGPath wave = new SVGPath();
         wave.setContent(content);
@@ -373,8 +403,12 @@ public class VideoPlayerView {
         return wave;
     }
 
-    // Helper to draw a cross over the speaker indicating that we're muted.
-    private Line audioLine(double startX, double startY, double endX, double endY) {
+    private Line audioLine(
+            double startX,
+            double startY,
+            double endX,
+            double endY) {
+
         Line line = new Line(startX, startY, endX, endY);
         line.setStroke(Color.BLACK);
         line.setStrokeWidth(2.0);
