@@ -9,6 +9,7 @@
  *
  * Copyright 2026 Simon Ratcliffe
  */
+
 package comp3011;
 
 import java.io.File;
@@ -22,17 +23,15 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 
 /**
- * The controller part of the video player model-view-controller architecture.
+ * Controller for the video player.
  *
- * Wires up events from the VideoPlayerView to the VideoPlayerModel.
- * This includes button actions, keyboard shortcuts, display resizing,
- * and asynchronous subtitle generation.
+ * Connects the view and model, handles playback controls,
+ * and displays generated subtitles synchronized with playback.
  */
 public class VideoPlayerController {
 
     private final VideoPlayerModel model;
     private final VideoPlayerView view;
-
     private final boolean subtitlesRequested;
 
     private final SubtitleGenerationService subtitleService =
@@ -73,6 +72,7 @@ public class VideoPlayerController {
     }
 
     public void installKeyboardShortcuts(Scene scene) {
+
         scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
 
             if (event.getCode() == KeyCode.ESCAPE) {
@@ -107,20 +107,24 @@ public class VideoPlayerController {
     }
 
     public void play(File file) {
-        view.setPlaybackControlsDisabled(false);
-        subtitleCues = List.of();
 
-        // Start video playback immediately.
+        view.setPlaybackControlsDisabled(false);
+
+        subtitleCues = List.of();
+        view.setSubtitleText("");
+
+        // Begin video playback immediately.
         model.play(file);
 
-        // Generate subtitles only when the -S flag is enabled.
+        // Only generate subtitles when -S is enabled.
         if (!subtitlesRequested) {
             return;
         }
 
-        // Run subtitle generation asynchronously so playback is not blocked.
+        // Generate subtitles without blocking video playback.
         subtitleService.generate(file.toPath())
                 .whenComplete((cues, error) -> {
+
                     Platform.runLater(() -> {
 
                         if (error != null) {
@@ -130,11 +134,24 @@ public class VideoPlayerController {
                             return;
                         }
 
-                        subtitleCues = cues;
+                        subtitleCues =
+                                cues == null ? List.of() : List.copyOf(cues);
 
                         System.out.println(
-                                "Generated " + cues.size()
+                                "Generated " + subtitleCues.size()
                                 + " subtitle cues.");
+
+                        // Debug subtitle text and timing.
+                        for (SubtitleCue cue : subtitleCues) {
+                            System.out.println(
+                                    "SUBTITLE DEBUG: text="
+                                    + cue.text()
+                                    + ", start=" + cue.start()
+                                    + ", end=" + cue.end());
+                        }
+
+                        // Refresh subtitles immediately after generation.
+                        updateSubtitle();
                     });
                 });
     }
@@ -145,18 +162,22 @@ public class VideoPlayerController {
 
     private void startOver() {
         model.startOver();
+        updateSubtitle();
     }
 
     private void backFiveSeconds() {
         model.backFiveSeconds();
+        updateSubtitle();
     }
 
     private void togglePause() {
         model.togglePause();
+        updateSubtitle();
     }
 
     private void forwardFiveSeconds() {
         model.forwardFiveSeconds();
+        updateSubtitle();
     }
 
     private void toggleAudioOutput() {
@@ -164,6 +185,7 @@ public class VideoPlayerController {
     }
 
     private void stopAndExit() {
+        view.setSubtitleText("");
         model.stopPlayback();
         Platform.exit();
     }
@@ -174,6 +196,7 @@ public class VideoPlayerController {
 
     private void onFrameReady(Image image) {
         view.setImage(image);
+        updateSubtitle();
     }
 
     private void onStatusChanged(String status) {
@@ -188,11 +211,40 @@ public class VideoPlayerController {
         } else {
             view.showPlayAction();
         }
+
+        updateSubtitle();
     }
 
     private void onAudioOutputStateChanged(
             boolean audioOutputEnabled) {
 
         view.showAudioEnabled(audioOutputEnabled);
+    }
+
+    /**
+     * Displays the subtitle cue matching the current video time.
+     * Clears the subtitle when no cue is active.
+     */
+    private void updateSubtitle() {
+
+        if (!subtitlesRequested || subtitleCues.isEmpty()) {
+            view.setSubtitleText("");
+            return;
+        }
+
+        double currentTime =
+                model.getCurrentPlaybackTimeSeconds();
+
+        String activeText = "";
+
+        for (SubtitleCue cue : subtitleCues) {
+
+            if (cue.isActiveAt(currentTime)) {
+                activeText = cue.text();
+                break;
+            }
+        }
+
+        view.setSubtitleText(activeText);
     }
 }

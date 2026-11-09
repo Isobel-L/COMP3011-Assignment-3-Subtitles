@@ -114,6 +114,11 @@ public class VideoPlayerModel {
         startPlayback(0, false, NO_SEEK_REQUEST);
     }
 
+    /** Returns the current logical video playback position in seconds. */
+    public double getCurrentPlaybackTimeSeconds() {
+        return currentTimestampUs / 1_000_000.0;
+    }
+
     public void startOver() {
         if (videoFile == null) {
             return;

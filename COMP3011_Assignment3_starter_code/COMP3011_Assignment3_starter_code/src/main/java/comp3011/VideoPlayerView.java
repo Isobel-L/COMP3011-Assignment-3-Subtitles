@@ -46,6 +46,7 @@ public class VideoPlayerView {
     private static final int ICON_SIZE = 28;
 
     private final ImageView imageView = new ImageView();
+    private final Label subtitleLabel = new Label();
     private final Label statusLabel = new Label("No video loaded");
     private final Label tooltipLabel = new Label();
     private final Pane tooltipLayer = new Pane();
@@ -62,7 +63,23 @@ public class VideoPlayerView {
         imageView.setPreserveRatio(true);
         imageView.setSmooth(false);
 
-        videoPane = new StackPane(imageView);
+        subtitleLabel.setVisible(false);
+        subtitleLabel.setMouseTransparent(true);
+        subtitleLabel.setWrapText(true);
+        subtitleLabel.setAlignment(Pos.CENTER);
+        subtitleLabel.setMaxWidth(Double.MAX_VALUE);
+        subtitleLabel.setStyle(
+                "-fx-font-size: 22px;"
+                + "-fx-font-weight: bold;"
+                + "-fx-text-fill: white;"
+                + "-fx-background-color: rgba(0, 0, 0, 0.75);"
+                + "-fx-background-radius: 5;"
+                + "-fx-padding: 6 12 6 12;");
+
+        videoPane = new StackPane(imageView, subtitleLabel);
+        StackPane.setAlignment(subtitleLabel, Pos.BOTTOM_CENTER);
+        StackPane.setMargin(subtitleLabel, new Insets(0, 24, 28, 24));
+        subtitleLabel.maxWidthProperty().bind(videoPane.widthProperty().subtract(48));
         videoPane.setStyle("-fx-background-color: black;");
         videoPane.setMinSize(0, 0);
         videoPane.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
@@ -133,6 +150,13 @@ public class VideoPlayerView {
 
     public void setImage(Image image) {
         imageView.setImage(image);
+    }
+
+    /** Displays the current subtitle, or clears the overlay when no cue is active. */
+    public void setSubtitleText(String text) {
+        boolean visible = text != null && !text.isBlank();
+        subtitleLabel.setText(visible ? text : "");
+        subtitleLabel.setVisible(visible);
     }
 
     public void setVideoDisplaySize(double width, double height) {
