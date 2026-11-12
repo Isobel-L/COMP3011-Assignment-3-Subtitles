@@ -68,8 +68,6 @@
                 <configuration>
                     <mainClass>comp3011.VideoPlayerApp</mainClass>
 
-<commandlineArgs>"C:\Users\isobe\OneDrive\Pictures\Camera Roll\WIN_20261108_21_24_52_Pro.mp4"</commandlineArgs>
-
                     <!-- Explicitly use Java 25 -->
                     <executable>C:\Program Files\Microsoft\jdk-25.0.4.7-hotspot\bin\java.exe</executable>
 
