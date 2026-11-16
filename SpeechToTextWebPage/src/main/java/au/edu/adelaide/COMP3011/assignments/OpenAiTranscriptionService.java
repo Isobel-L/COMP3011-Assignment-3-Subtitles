@@ -1,4 +1,3 @@
-
 package au.edu.adelaide.COMP3011.assignments;
 
 import java.io.IOException;
@@ -13,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -76,12 +76,26 @@ public class OpenAiTranscriptionService implements TranscriptionService {
         body.add("timestamp_granularities[]", "segment");
         body.add("file", audio);
 
-        TranscriptionResponse response = restClient.post()
-                .uri("/audio/transcriptions")
-                .contentType(MediaType.MULTIPART_FORM_DATA)
-                .body(body)
-                .retrieve()
-                .body(TranscriptionResponse.class);
+        TranscriptionResponse response;
+
+        try {
+            response = restClient.post()
+                    .uri("/audio/transcriptions")
+                    .contentType(MediaType.MULTIPART_FORM_DATA)
+                    .body(body)
+                    .retrieve()
+                    .body(TranscriptionResponse.class);
+
+        } catch (RestClientResponseException e) {
+
+            System.err.println(
+                    "Transcription API status: " + e.getStatusCode());
+
+            System.err.println(
+                    "Transcription API error: " + e.getResponseBodyAsString());
+
+            throw e;
+        }
 
         if (response == null) {
             throw new IOException("OpenAI returned an empty response.");
