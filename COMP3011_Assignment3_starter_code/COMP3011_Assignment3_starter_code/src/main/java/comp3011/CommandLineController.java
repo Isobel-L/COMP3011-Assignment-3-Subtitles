@@ -4,7 +4,7 @@
  * 
  * Authors:
  *   1. Simon Ratcliffe, in collaboration with GPT-5.6 Terra
- *   2. <student name and student number insert here upon modification>
+ *   2. Isobel Kate Leviton ()
  *
  * Copyright 2026 Simon Ratcliffe
  */
@@ -108,7 +108,7 @@ public class CommandLineController {
             } else if ("-a".equals(arg) || "--audio".equals(arg)) {
                 audioRequested = true;
 
-            } else if ("-S".equals(arg) || "--subtitles".equals(arg)) {
+            } else if ("-S".equals(arg) || "--subtitle-frames".equals(arg)) {
                 subtitlesRequested = true;
 
             } else if ("-x".equals(arg) || "--maximise".equals(arg)) {

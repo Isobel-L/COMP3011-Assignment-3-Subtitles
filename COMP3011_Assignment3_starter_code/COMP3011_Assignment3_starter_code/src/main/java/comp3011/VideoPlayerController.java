@@ -4,7 +4,7 @@
  *
  * Authors:
  *   1. Simon Ratcliffe, in collaboration with GPT-5.6 Terra
- *   2. <student name and student number insert here upon modification>
+ *   2. Isobel Kate Leviton ()
  *
  * Copyright 2026 Simon Ratcliffe
  */
@@ -30,7 +30,9 @@ public class VideoPlayerController {
             new SubtitleGenerationService();
 
     private List<SubtitleCue> subtitleCues = List.of();
-    private boolean subtitlesVisible = true;
+    private boolean subtitlesVisible = false;
+    private boolean subtitleGenerationStarted = false;
+    private File currentVideoFile;
     private long subtitleRequestVersion = 0;
     private boolean shuttingDown = false;
     private final BiConsumer<Integer, Integer> videoSizeChangedHandler;
@@ -43,6 +45,7 @@ public class VideoPlayerController {
 
         this.view = new VideoPlayerView();
         this.subtitlesRequested = subtitlesRequested;
+        this.subtitlesVisible = subtitlesRequested;
         this.videoSizeChangedHandler = videoSizeChangedHandler;
 
         model = new VideoPlayerModel(
@@ -63,7 +66,7 @@ public class VideoPlayerController {
         view.getSubtitleButton().setOnAction(_ -> toggleSubtitles());
 
         view.showAudioEnabled(model.isAudioOutputEnabled());
-        view.getSubtitleButton().setDisable(!subtitlesRequested);
+        view.getSubtitleButton().setDisable(false);
         updateSubtitleButton();
     }
 
@@ -87,10 +90,8 @@ public class VideoPlayerController {
             } else if (event.getCode() == KeyCode.A) {
                 toggleAudioOutput();
                 event.consume();
-            } else if (event.getCode() == KeyCode.C) {
-                if (subtitlesRequested) {
-                    toggleSubtitles();
-                }
+            } else if (event.getCode() == KeyCode.S) {
+                toggleSubtitles();
                 event.consume();
             }
         });
@@ -106,41 +107,19 @@ public class VideoPlayerController {
         shuttingDown = false;
 
         view.setPlaybackControlsDisabled(false);
-        view.getSubtitleButton().setDisable(!subtitlesRequested);
+        view.getSubtitleButton().setDisable(false);
         subtitleCues = List.of();
-        subtitlesVisible = true;
+        subtitleGenerationStarted = false;
+        currentVideoFile = file;
+        subtitlesVisible = subtitlesRequested;
         updateSubtitleButton();
         view.setSubtitleText("");
 
         model.play(file);
-        if (!subtitlesRequested) {
-            return;
+        if (subtitlesVisible) {
+            playSubtitlesForCurrentVideo();
         }
-
-        // The service caches results and performs extraction/transcription off the UI thread.
-        subtitleService.generate(file.toPath()).whenComplete((cues, error) ->
-                Platform.runLater(() -> {
-                    if (shuttingDown || requestVersion != subtitleRequestVersion) {
-                        return; // Ignore stale responses from previously loaded videos.
-                    }
-                    if (error != null) {
-                        System.err.println("Subtitle generation failed: "
-                                + error.getMessage());
-                        return;
-                    }
-
-                    subtitleCues = cues == null ? List.of() : List.copyOf(cues);
-                    System.out.println("Generated " + subtitleCues.size()
-                            + " subtitle cues.");
-                    for (SubtitleCue cue : subtitleCues) {
-                        System.out.println("SUBTITLE DEBUG: text=" + cue.text()
-                                + ", start=" + cue.start()
-                                + ", end=" + cue.end());
-                    }
-                    updateSubtitle();
-                }));
     }
-
     public void shutdown() {
         shuttingDown = true;
         subtitleRequestVersion++;
@@ -171,17 +150,42 @@ public class VideoPlayerController {
         model.toggleAudioOutput();
     }
 
-    private void toggleSubtitles() {
-        if (!subtitlesRequested) {
+    private void playSubtitlesForCurrentVideo() {
+        if (subtitleGenerationStarted || currentVideoFile == null || shuttingDown) {
             return;
         }
+
+        subtitleGenerationStarted = true;
+        long requestVersion = subtitleRequestVersion;
+
+        subtitleService.generate(currentVideoFile.toPath()).whenComplete((cues, error) ->
+                Platform.runLater(() -> {
+                    if (shuttingDown || requestVersion != subtitleRequestVersion) {
+                        return;
+                    }
+
+                    if (error != null) {
+                        subtitleGenerationStarted = false;
+                        System.err.println("Subtitle generation failed: "
+                                + error.getMessage());
+                        return;
+                    }
+
+                    subtitleCues = cues == null ? List.of() : List.copyOf(cues);
+                    updateSubtitle();
+                }));
+    }
+    private void toggleSubtitles() {
         subtitlesVisible = !subtitlesVisible;
+        if (subtitlesVisible && !subtitleGenerationStarted && currentVideoFile != null) {
+            playSubtitlesForCurrentVideo();
+        }
         updateSubtitleButton();
         updateSubtitle();
     }
 
     private void updateSubtitleButton() {
-        if (subtitlesRequested && subtitlesVisible) {
+        if (subtitlesVisible) {
             view.getSubtitleButton().setStyle(
                     "-fx-font-weight: bold;"
                     + "-fx-background-color: lightgreen;");
@@ -225,7 +229,7 @@ public class VideoPlayerController {
     }
 
     private void updateSubtitle() {
-        if (!subtitlesRequested || !subtitlesVisible || subtitleCues.isEmpty()) {
+        if (!subtitlesVisible || subtitleCues.isEmpty()) {
             view.setSubtitleText("");
             return;
         }
@@ -241,4 +245,3 @@ public class VideoPlayerController {
         view.setSubtitleText(activeText);
     }
 }
-
