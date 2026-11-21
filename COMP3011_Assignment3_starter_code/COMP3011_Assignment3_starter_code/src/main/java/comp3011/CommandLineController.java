@@ -1,10 +1,11 @@
+
 /*
  * Starter code supplied for Adelaide University COMP3011 Assignment 2.
  * Students are free to modify this file for assessment purposes.
- * 
+ *
  * Authors:
  *   1. Simon Ratcliffe, in collaboration with GPT-5.6 Terra
- *   2. Isobel Kate Leviton ()
+ *   2. Isobel Kate Leviton
  *
  * Copyright 2026 Simon Ratcliffe
  */
@@ -108,7 +109,9 @@ public class CommandLineController {
             } else if ("-a".equals(arg) || "--audio".equals(arg)) {
                 audioRequested = true;
 
-            } else if ("-S".equals(arg) || "--subtitle-frames".equals(arg)) {
+            } else if ("-S".equals(arg)
+                    || "--subtitles".equals(arg)
+                    || "--subtitle-frames".equals(arg)) {
                 subtitlesRequested = true;
 
             } else if ("-x".equals(arg) || "--maximise".equals(arg)) {
@@ -202,7 +205,8 @@ public class CommandLineController {
 
             if (frameNumber <= 0) {
                 errorMessage =
-                    "Output frame number must be positive: " + frameNumberText;
+                        "Output frame number must be positive: "
+                        + frameNumberText;
 
             } else if (outputFrameNumber != null) {
                 errorMessage = "Only one output frame option can be used";
@@ -213,8 +217,8 @@ public class CommandLineController {
 
         } catch (NumberFormatException e) {
             errorMessage =
-                "Output frame number must be a positive integer: "
-                + frameNumberText;
+                    "Output frame number must be a positive integer: "
+                    + frameNumberText;
         }
 
         return argIndex + 1;
@@ -229,6 +233,13 @@ public class CommandLineController {
         this.displayId = displayId;
     }
 
+    /**
+     * Checks whether an argument contains valid combined short options.
+     * For example:
+     * -Sn enables subtitles and frame numbers.
+     * -nS enables frame numbers and subtitles.
+     * -ns applies frame numbers and scratches.
+     */
     private boolean isFrameProcessorCluster(String arg) {
         if (!arg.startsWith("-")
                 || arg.startsWith("--")
@@ -245,8 +256,12 @@ public class CommandLineController {
         return true;
     }
 
+    /**
+     * Recognises subtitle and frame processor short options.
+     */
     private boolean isFrameProcessorOption(char option) {
-        return option == 'n'
+        return option == 'S'
+            || option == 'n'
             || option == 's'
             || option == 'f'
             || option == 'w'
@@ -259,9 +274,18 @@ public class CommandLineController {
             || option == 'p';
     }
 
+    /**
+     * Processes combined short options in command-line order.
+     */
     private void parseFrameProcessorCluster(String arg) {
         for (int i = 1; i < arg.length(); i++) {
-            addFrameProcessor(arg.charAt(i));
+            char option = arg.charAt(i);
+
+            if (option == 'S') {
+                subtitlesRequested = true;
+            } else {
+                addFrameProcessor(option);
+            }
         }
     }
 
@@ -329,10 +353,12 @@ public class CommandLineController {
 
         System.out.println();
         System.out.println(
-            "Frame processors are applied in command-line order and may be repeated.");
+                "Short options can be combined, e.g. -Sn enables subtitles and frame numbers.");
         System.out.println(
-            "Example: -nssnfwyvdjmbp numbers, scratches twice, numbers again, flickers,");
+                "Frame processors are applied in command-line order and may be repeated.");
         System.out.println(
-            "converts, warms, vignettes, dusts, jitters, mottles, bleeds, then peppers.");
+                "Example: -nssnfwyvdjmbp numbers, scratches twice, numbers again, flickers,");
+        System.out.println(
+                "converts, warms, vignettes, dusts, jitters, mottles, bleeds, then peppers.");
     }
 }

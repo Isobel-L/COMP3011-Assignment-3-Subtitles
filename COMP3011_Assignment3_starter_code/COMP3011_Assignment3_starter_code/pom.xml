@@ -68,9 +68,6 @@
                 <configuration>
                     <mainClass>comp3011.VideoPlayerApp</mainClass>
 
-                    <!-- Explicitly use Java 25 -->
-                    <executable>C:\Program Files\Microsoft\jdk-25.0.4.7-hotspot\bin\java.exe</executable>
-
                     <options>
                         <option>--enable-native-access=javafx.graphics</option>
                         <option>--enable-native-access=ALL-UNNAMED</option>
